@@ -1,0 +1,2636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EarthQuakeOS — Seismic Intelligence Platform</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Exo+2:wght@300;400;600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+    :root {
+      --g1: #1a3a0f;
+      --g2: #2d5016;
+      --g3: #4a7c2c;
+      --g4: #5c9e38;
+      --g5: #8bc34a;
+      --g6: hsl(88, 50%, 76%);
+      --g7: #e8f5e9;
+      --g8: #f1f8e9;
+      --bg: #d9ffac;
+      --bg2: #ffffff;
+      --rim: rgba(74, 124, 44, .18);
+      --rim2: rgba(74, 124, 44, .1);
+      --rim3: rgba(74, 124, 44, .06);
+      --amber: #e65100;
+      --amber2: #ff8f00;
+      --red: #c0392b;
+      --red2: #e74c3c;
+      --blue: #006699;
+      --blue2: #0099cc;
+      --purple: #6a1b9a;
+      --text: #1a2e0a;
+      --text2: #3a5a1e;
+      --text3: #7a9a60;
+      --text4: #a8c47a;
+      --shadow: 0 2px 12px rgba(45, 80, 22, .1);
+      --shadow-lg: 0 8px 30px rgba(45, 80, 22, .15);
+      --t: all .3s cubic-bezier(.4, 0, .2, 1);
+      --ts: all .6s cubic-bezier(.4, 0, .2, 1);
+      --mono: 'Inter', sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      font-family: var(--ui);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image: radial-gradient(rgba(74, 124, 44, .1) 1px, transparent 1px);
+      background-size: 28px 28px
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--g8)
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--g5);
+      border-radius: 3px
+    }
+
+    .app {
+      position: relative;
+      z-index: 1
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      background: linear-gradient(135deg, var(--g1), var(--g2));
+      border-bottom: 3px solid var(--g5);
+      padding: 0 28px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 500;
+      box-shadow: 0 2px 20px rgba(45, 80, 22, .4);
+      animation: navDrop .5s ease
+    }
+
+    @keyframes navDrop {
+      from {
+        transform: translateY(-62px);
+        opacity: 0
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1
+      }
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--mono);
+      font-size: 1.05em;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 2px
+    }
+
+    .n-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--g5), var(--g4));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      box-shadow: 0 0 14px rgba(139, 195, 74, .4);
+      animation: logoPulse 2.5s ease infinite
+    }
+
+    @keyframes logoPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 10px rgba(139, 195, 74, .3)
+      }
+
+      50% {
+        box-shadow: 0 0 22px rgba(139, 195, 74, .7)
+      }
+    }
+
+    .nav-center {
+      display: flex;
+      gap: 3px
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, .75);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--ui);
+      font-size: .82em;
+      font-weight: 600;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--t);
+      position: relative
+    }
+
+    .nav-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 5px;
+      left: 50%;
+      right: 50%;
+      height: 2px;
+      background: var(--g5);
+      border-radius: 2px;
+      transition: var(--t)
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active {
+      color: #fff;
+      background: rgba(255, 255, 255, .1)
+    }
+
+    .nav-btn:hover::after,
+    .nav-btn.active::after {
+      left: 12px;
+      right: 12px
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    #connDot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .25);
+      transition: var(--t)
+    }
+
+    #connDot.on {
+      background: #a5d6a7;
+      box-shadow: 0 0 10px #a5d6a7;
+      animation: dotBlink 2s ease infinite
+    }
+
+    @keyframes dotBlink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .5
+      }
+    }
+
+    #connLabel {
+      font-family: var(--mono);
+      font-size: .7em;
+      color: rgba(255, 255, 255, .6);
+      transition: var(--t)
+    }
+
+    #clockEl {
+      font-family: var(--mono);
+      font-size: .78em;
+      color: rgba(255, 255, 255, .8)
+    }
+
+
+    .btn-cfg {
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .25);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--ui);
+      font-size: .78em;
+      font-weight: 600;
+      transition: var(--t)
+    }
+
+    .btn-cfg:hover {
+      background: rgba(255, 255, 255, .22)
+    }
+
+    /* ── PAGES ── */
+    .page {
+      display: none;
+      padding: 22px 28px;
+      animation: pageIn .4s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    .page.active {
+      display: block
+    }
+
+    @keyframes pageIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    /* ── GRID ── */
+    .g3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 18px
+    }
+
+    .g2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 18px
+    }
+
+    .g4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 18px
+    }
+
+    .mb {
+      margin-bottom: 18px
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--rim);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--t);
+      box-shadow: var(--shadow);
+      animation: cardIn .45s cubic-bezier(.4, 0, .2, 1) both
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--g5), var(--g4), var(--g3));
+      opacity: .7
+    }
+
+    .card:hover {
+      border-color: rgba(74, 124, 44, .35);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(45, 80, 22, .15)
+    }
+
+    .card:nth-child(1) {
+      animation-delay: .04s
+    }
+
+    .card:nth-child(2) {
+      animation-delay: .08s
+    }
+
+    .card:nth-child(3) {
+      animation-delay: .12s
+    }
+
+    .card:nth-child(4) {
+      animation-delay: .16s
+    }
+
+    @keyframes cardIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(.98)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1)
+      }
+    }
+
+    .ch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--rim2)
+    }
+
+    .ct {
+      font-family: var(--mono);
+      font-size: .73em;
+      font-weight: 700;
+      color: var(--g1);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .ci {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--g7), var(--g6));
+      border: 1px solid var(--rim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .88em
+    }
+
+    /* ── ALERT BANNER ── */
+    .alert-banner {
+      border-radius: 12px;
+      padding: 14px 22px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: var(--mono);
+      font-size: .84em;
+      font-weight: 700;
+      letter-spacing: .5px;
+      background: linear-gradient(135deg, #f1f8e9, #e8f5e9);
+      border: 1px solid rgba(139, 195, 74, .4);
+      color: var(--g1);
+      box-shadow: var(--shadow);
+      transition: var(--ts);
+      animation: bannerIn .5s ease
+    }
+
+    @keyframes bannerIn {
+      from {
+        opacity: 0;
+        transform: scaleX(.95)
+      }
+
+      to {
+        opacity: 1;
+        transform: scaleX(1)
+      }
+    }
+
+    .alert-banner.warn {
+      background: linear-gradient(135deg, #fff8e1, #fff3cd);
+      border-color: rgba(230, 81, 0, .3);
+      color: var(--amber)
+    }
+
+    .alert-banner.crit {
+      background: linear-gradient(135deg, #ffebee, #fce4ec);
+      border-color: rgba(192, 57, 43, .4);
+      color: var(--red);
+      animation: critPulse .6s ease infinite alternate
+    }
+
+    @keyframes critPulse {
+      from {
+        box-shadow: 0 3px 12px rgba(192, 57, 43, .15)
+      }
+
+      to {
+        box-shadow: 0 6px 24px rgba(192, 57, 43, .35)
+      }
+    }
+
+    .a-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--g4);
+      box-shadow: 0 0 12px rgba(74, 124, 44, .5)
+    }
+
+    .alert-banner.warn .a-dot {
+      background: var(--amber2);
+      box-shadow: 0 0 12px rgba(230, 81, 0, .4)
+    }
+
+    .alert-banner.crit .a-dot {
+      background: var(--red2);
+      box-shadow: 0 0 12px rgba(192, 57, 43, .5);
+      animation: dotBlink .4s ease infinite
+    }
+
+    .a-text {
+      flex: 1
+    }
+
+    .a-time {
+      font-size: .7em;
+      opacity: .55;
+      margin-left: auto;
+      font-family: var(--mono)
+    }
+
+    /* ── TICKER ── */
+    .ticker {
+      height: 30px;
+      background: linear-gradient(135deg, var(--g1), var(--g2));
+      border-radius: 8px;
+      display: flex;
+      overflow: hidden;
+      margin-bottom: 18px;
+      border: 1px solid var(--rim);
+      box-shadow: var(--shadow)
+    }
+
+    .ticker-lbl {
+      font-family: var(--mono);
+      font-size: .63em;
+      color: var(--g6);
+      padding: 0 14px;
+      border-right: 1px solid rgba(139, 195, 74, .2);
+      display: flex;
+      align-items: center;
+      letter-spacing: 2px;
+      background: rgba(0, 0, 0, .15);
+      flex-shrink: 0;
+      white-space: nowrap
+    }
+
+    .ticker-inner {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center
+    }
+
+    .ticker-scroll {
+      display: flex;
+      gap: 36px;
+      white-space: nowrap;
+      font-family: var(--mono);
+      font-size: .67em;
+      color: rgba(255, 255, 255, .7);
+      padding: 0 18px;
+      animation: tickerMove 28s linear infinite
+    }
+
+    @keyframes tickerMove {
+      from {
+        transform: translateX(0)
+      }
+
+      to {
+        transform: translateX(-50%)
+      }
+    }
+
+    .tk {
+      color: rgb(255, 253, 253)
+    }
+
+    .tv {
+      color: #fffefe;
+      font-weight: 700
+    }
+
+    /* ── NODE CARDS ── */
+    .node-card {
+      background: var(--bg2);
+      border: 1px solid var(--rim);
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+      transition: var(--t);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden
+    }
+
+    .node-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--g5), var(--g4));
+      transform: scaleX(0);
+      transition: var(--t);
+      transform-origin: left
+    }
+
+    .node-card.online::after {
+      transform: scaleX(1)
+    }
+
+    .node-card.online {
+      border-color: rgba(74, 124, 44, .3)
+    }
+
+    .node-card.online:hover {
+      border-color: rgba(74, 124, 44, .55);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(45, 80, 22, .18)
+    }
+
+    .node-card.offline {
+      opacity: .55;
+      border-color: rgba(192, 57, 43, .2)
+    }
+
+    .node-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin-bottom: 12px;
+      font-size: .7em;
+      font-family: var(--mono);
+      letter-spacing: 1.8px;
+      color: var(--text3)
+    }
+
+    .s-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: var(--t)
+    }
+
+    .s-dot.on {
+      background: var(--g4);
+      box-shadow: 0 0 8px rgba(74, 124, 44, .5);
+      animation: dotBlink 2s ease infinite
+    }
+
+    .s-dot.off {
+      background: var(--red2);
+      box-shadow: 0 0 8px rgba(192, 57, 43, .3)
+    }
+
+    .node-mag {
+      font-family: var(--mono);
+      font-size: 2.1em;
+      font-weight: 700;
+      color: var(--g1);
+      line-height: 1;
+      margin-bottom: 5px;
+      transition: var(--t)
+    }
+
+    .node-mag.warn {
+      color: var(--amber)
+    }
+
+    .node-mag.crit {
+      color: var(--red)
+    }
+
+    .node-sub {
+      font-size: .68em;
+      color: var(--text3);
+      font-family: var(--mono);
+      margin-top: 4px
+    }
+
+    .node-xyz {
+      font-family: var(--mono);
+      font-size: .66em;
+      color: var(--text3);
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 8px;
+      flex-wrap: wrap
+    }
+
+    .node-xyz span {
+      background: var(--g7);
+      border: 1px solid var(--rim2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--g2)
+    }
+
+    /* ── STAT ROWS ── */
+    .sr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--rim3);
+      transition: var(--t)
+    }
+
+    .sr:last-child {
+      border-bottom: none
+    }
+
+    .sr:hover {
+      padding-left: 5px
+    }
+
+    .sr-l {
+      font-size: .77em;
+      color: var(--text3);
+      font-family: var(--mono)
+    }
+
+    .sr-v {
+      font-family: var(--mono);
+      font-size: .8em;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .sr-v.g {
+      color: var(--g2)
+    }
+
+    .sr-v.a {
+      color: var(--amber)
+    }
+
+    .sr-v.r {
+      color: var(--red)
+    }
+
+    .sr-v.b {
+      color: var(--blue)
+    }
+
+    .sr-v.p {
+      color: var(--purple)
+    }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: .67em;
+      font-weight: 700;
+      letter-spacing: .4px;
+      transition: var(--t)
+    }
+
+    .badge::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0
+    }
+
+    .badge.ok {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid rgba(46, 125, 50, .3)
+    }
+
+    .badge.warn {
+      background: #fff3e0;
+      color: #e65100;
+      border: 1px solid rgba(230, 81, 0, .3)
+    }
+
+    .badge.err {
+      background: #ffebee;
+      color: #c0392b;
+      border: 1px solid rgba(192, 57, 43, .3)
+    }
+
+    .badge.info {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid rgba(21, 101, 192, .3)
+    }
+
+    .badge.purple {
+      background: #f3e5f5;
+      color: #6a1b9a;
+      border: 1px solid rgba(106, 27, 154, .3)
+    }
+
+    .badge.n1 {
+      background: #e8f5e9;
+      color: #1b5e20;
+      border: 1px solid rgba(27, 94, 32, .3)
+    }
+
+    .badge.n2 {
+      background: #e3f2fd;
+      color: #0d47a1;
+      border: 1px solid rgba(13, 71, 161, .3)
+    }
+
+    /* ── CHARTS ── */
+    .cw {
+      position: relative;
+      height: 190px;
+      margin-top: 10px
+    }
+
+    .cw-md {
+      position: relative;
+      height: 240px;
+      margin-top: 10px
+    }
+
+    .cw-lg {
+      position: relative;
+      height: 300px;
+      margin-top: 10px
+    }
+
+    /* ── TERMINAL ── */
+    .terminal {
+      background: #1a2e0a;
+      border: 1px solid rgba(74, 124, 44, .3);
+      border-radius: 8px;
+      padding: 14px;
+      height: 200px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: .74em;
+      line-height: 1.8
+    }
+
+    .log-e {
+      display: flex;
+      gap: 8px;
+      padding: 1px 0;
+      animation: logIn .2s ease
+    }
+
+    @keyframes logIn {
+      from {
+        opacity: 0;
+        transform: translateX(-6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    .l-ts {
+      color: rgba(139, 195, 74, .35);
+      flex-shrink: 0;
+      min-width: 68px
+    }
+
+    .l-src {
+      min-width: 80px;
+      flex-shrink: 0
+    }
+
+    .l-msg {
+      color: rgba(197, 225, 165, .75)
+    }
+
+    .log-info .l-src,
+    .log-info .l-msg {
+      color: rgba(197, 225, 165, .5)
+    }
+
+    .log-sys .l-src {
+      color: #8bc34a
+    }
+
+    .log-sys .l-msg {
+      color: rgba(197, 225, 165, .75)
+    }
+
+    .log-warn .l-src,
+    .log-warn .l-msg {
+      color: #ffb74d
+    }
+
+    .log-error .l-src,
+    .log-error .l-msg {
+      color: #ef9a9a
+    }
+
+    .log-alert .l-src,
+    .log-alert .l-msg {
+      color: #f48fb1
+    }
+
+    /* ── TABLE ── */
+    .dtbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .77em
+    }
+
+    .dtbl thead tr {
+      background: linear-gradient(135deg, var(--g7), var(--g8));
+      border-bottom: 2px solid var(--rim)
+    }
+
+    .dtbl th {
+      padding: 10px 12px;
+      text-align: left;
+      font-family: var(--mono);
+      font-size: .72em;
+      color: var(--g1);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700
+    }
+
+    .dtbl td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--rim3);
+      font-family: var(--mono);
+      color: var(--text);
+      transition: var(--t)
+    }
+
+    .dtbl tbody tr:hover td {
+      background: var(--g8);
+      padding-left: 16px
+    }
+
+    .dtbl .tm {
+      color: var(--g2)
+    }
+
+    /* ── GANTT ── */
+    .g-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 56px;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      animation: ganttSlide .4s cubic-bezier(.4, 0, .2, 1) both
+    }
+
+    .g-row:nth-child(1) {
+      animation-delay: .05s
+    }
+
+    .g-row:nth-child(2) {
+      animation-delay: .1s
+    }
+
+    .g-row:nth-child(3) {
+      animation-delay: .15s
+    }
+
+    .g-row:nth-child(4) {
+      animation-delay: .2s
+    }
+
+    .g-row:nth-child(5) {
+      animation-delay: .25s
+    }
+
+    .g-row:nth-child(6) {
+      animation-delay: .3s
+    }
+
+    @keyframes ganttSlide {
+      from {
+        opacity: 0;
+        transform: translateX(-18px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    .g-lbl {
+      font-family: var(--mono);
+      font-size: .7em;
+      color: var(--text2);
+      text-align: right;
+      white-space: nowrap
+    }
+
+    .g-track {
+      height: 20px;
+      background: var(--g8);
+      border: 1px solid var(--rim2);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .g-fill {
+      height: 100%;
+      position: absolute;
+      left: 0;
+      top: 0;
+      border-radius: 3px;
+      transition: width 1.2s cubic-bezier(.4, 0, .2, 1);
+      display: flex;
+      align-items: center;
+      padding: 0 6px
+    }
+
+    .g-fill-lbl {
+      font-size: .63em;
+      font-family: var(--mono);
+      color: rgba(255, 255, 255, .85);
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden
+    }
+
+    .g-val {
+      font-family: var(--mono);
+      font-size: .68em;
+      color: var(--text3);
+      text-align: right
+    }
+
+    .pri-bar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .72em;
+      font-family: var(--mono)
+    }
+
+    .pri-pip {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0
+    }
+
+    /* ── FILESYSTEM ── */
+    .fs-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--t);
+      font-family: var(--mono);
+      font-size: .76em;
+      border: 1px solid transparent;
+      margin-bottom: 4px
+    }
+
+    .fs-item:hover {
+      background: var(--g8);
+      border-color: var(--rim);
+      padding-left: 18px
+    }
+
+    .fs-item.active {
+      background: var(--g7);
+      border-color: var(--rim);
+      color: var(--g1)
+    }
+
+    .fs-name {
+      flex: 1;
+      color: var(--text)
+    }
+
+    .fs-meta {
+      font-size: .7em;
+      color: var(--text3)
+    }
+
+    .file-viewer {
+      background: #1a2e0a;
+      border: 1px solid rgba(74, 124, 44, .3);
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 180px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: .72em;
+      line-height: 1.9
+    }
+
+    .fv-line {
+      display: flex;
+      gap: 10px;
+      padding: 1px 0;
+      animation: logIn .15s ease;
+      border-bottom: 1px solid rgba(139, 195, 74, .05)
+    }
+
+    .fv-ts {
+      color: rgba(139, 195, 74, .35);
+      flex-shrink: 0
+    }
+
+    .fv-lvl {
+      flex-shrink: 0;
+      min-width: 52px
+    }
+
+    .stor-bar-wrap {
+      height: 10px;
+      background: var(--g8);
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid var(--rim2)
+    }
+
+    .stor-bar {
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, var(--g5), var(--g3));
+      transition: width 1.2s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    .stor-pct {
+      font-family: var(--mono);
+      font-size: .73em;
+      color: var(--g2);
+      margin-top: 4px
+    }
+
+    /* ── EVENT STAT CARDS ── */
+    .ev-card {
+      background: var(--bg2);
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid var(--rim);
+      text-align: center;
+      transition: var(--t);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden
+    }
+
+    .ev-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--ac, var(--g5));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: var(--ts)
+    }
+
+    .ev-card:hover::after {
+      transform: scaleX(1)
+    }
+
+    .ev-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px rgba(45, 80, 22, .15)
+    }
+
+    .ev-card.r {
+      --ac: var(--red2)
+    }
+
+    .ev-card.a {
+      --ac: var(--amber2)
+    }
+
+    .ev-card.g {
+      --ac: var(--g4)
+    }
+
+    .ev-card.b {
+      --ac: var(--blue)
+    }
+
+    .ev-num {
+      font-family: var(--mono);
+      font-size: 2.5em;
+      font-weight: 700;
+      line-height: 1;
+      margin: 8px 0;
+      transition: var(--t)
+    }
+
+    .ev-num.r {
+      color: var(--red)
+    }
+
+    .ev-num.a {
+      color: var(--amber)
+    }
+
+    .ev-num.g {
+      color: var(--g2)
+    }
+
+    .ev-num.b {
+      color: var(--blue)
+    }
+
+    .ev-lbl {
+      font-family: var(--mono);
+      font-size: .67em;
+      color: var(--text3);
+      letter-spacing: 1.5px;
+      text-transform: uppercase
+    }
+
+    /* ── OS CONCEPT ── */
+    .os-concept {
+      background: var(--g8);
+      border: 1px solid var(--rim2);
+      border-left: 3px solid var(--g5);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: .77em;
+      font-family: var(--mono);
+      color: var(--text2);
+      line-height: 1.9
+    }
+
+    .os-concept b {
+      color: var(--g1)
+    }
+
+    .c-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--g7);
+      border: 1px solid var(--rim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--g2);
+      font-size: .88em;
+      margin: 2px 3px 2px 0
+    }
+
+    /* ── THRESHOLD VIZ ── */
+    .thresh-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px
+    }
+
+    .thresh-name {
+      font-family: var(--mono);
+      font-size: .71em;
+      color: var(--text2);
+      min-width: 120px
+    }
+
+    .thresh-track {
+      flex: 1;
+      height: 8px;
+      background: var(--g8);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--rim2)
+    }
+
+    .thresh-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1.5s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    .thresh-value {
+      font-family: var(--mono);
+      font-size: .7em;
+      color: var(--text3);
+      min-width: 50px;
+      text-align: right
+    }
+
+    /* ── MODAL ── */
+    .modal-ov {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 46, 10, .7);
+      backdrop-filter: blur(10px);
+      z-index: 800;
+      align-items: center;
+      justify-content: center
+    }
+
+    .modal-ov.open {
+      display: flex
+    }
+
+    .modal-box {
+      background: #fff;
+      border: 1px solid var(--rim);
+      border-radius: 18px;
+      padding: 30px;
+      width: 420px;
+      animation: modalIn .3s cubic-bezier(.34, 1.56, .64, 1);
+      box-shadow: 0 30px 80px rgba(45, 80, 22, .3);
+      position: relative;
+      overflow: hidden
+    }
+
+    .modal-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--g5), var(--g4), var(--g3))
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: scale(.85) translateY(20px)
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0)
+      }
+    }
+
+    .m-title {
+      font-family: var(--mono);
+      font-size: .95em;
+      color: var(--g1);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--rim2)
+    }
+
+    .f-grp {
+      margin-bottom: 14px
+    }
+
+    .f-lbl {
+      display: block;
+      font-size: .73em;
+      font-family: var(--mono);
+      color: var(--text2);
+      margin-bottom: 5px;
+      letter-spacing: 1px
+    }
+
+    .f-inp {
+      width: 100%;
+      background: var(--g8);
+      border: 1.5px solid var(--rim);
+      color: var(--text);
+      padding: 10px 13px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: .82em;
+      transition: var(--t)
+    }
+
+    .f-inp:focus {
+      outline: none;
+      border-color: var(--g4);
+      box-shadow: 0 0 0 3px rgba(74, 124, 44, .12)
+    }
+
+    .m-acts {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px
+    }
+
+    .btn-p {
+      flex: 1;
+      background: linear-gradient(135deg, var(--g4), var(--g3));
+      border: none;
+      color: #fff;
+      padding: 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: .8em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      transition: var(--t)
+    }
+
+    .btn-p:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(45, 80, 22, .3)
+    }
+
+    .btn-s {
+      padding: 11px 18px;
+      background: var(--g8);
+      border: 1px solid var(--rim);
+      color: var(--text2);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: .8em;
+      transition: var(--t)
+    }
+
+    .btn-s:hover {
+      border-color: var(--red2);
+      color: var(--red)
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px 28px;
+      border-top: 2px solid var(--rim2);
+      font-family: var(--mono);
+      font-size: .68em;
+      color: var(--text3);
+      margin-top: 20px;
+      background: var(--bg2)
+    }
+
+    footer span {
+      color: var(--g2)
+    }
+
+    select.f-inp {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234a7c2c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px
+    }
+
+    @media(max-width:900px) {
+
+      .g3,
+      .g4 {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .nav-center {
+        display: none
+      }
+    }
+
+    @media(max-width:600px) {
+
+      .g2,
+      .g3,
+      .g4 {
+        grid-template-columns: 1fr
+      }
+
+      .page {
+        padding: 14px
+      }
+
+      .navbar {
+        padding: 0 14px
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="modal-ov" id="cfgModal">
+    <div class="modal-box">
+      <div class="m-title">⚙ Supabase Connection</div>
+      <div class="f-grp"><label class="f-lbl">Project URL</label><input class="f-inp" id="cfgUrl" type="text"
+          placeholder="https://xxxx.supabase.co"></div>
+      <div class="f-grp"><label class="f-lbl">Anon Key</label><input class="f-inp" id="cfgKey" type="password"
+          placeholder="eyJh…"></div>
+      <div class="m-acts"><button class="btn-p" onclick="saveConfig()">⚡ Connect</button><button class="btn-s"
+          onclick="closeModal()">Cancel</button></div>
+    </div>
+  </div>
+
+  <div class="app">
+    <nav class="navbar">
+      <div class="nav-brand">
+        <div class="n-logo">⚡</div>EARTHQUAKEOS
+      </div>
+      <div class="nav-center">
+        <button class="nav-btn active" onclick="showPage('dashboard',this)"><span></span>Dashboard</button>
+        <button class="nav-btn" onclick="showPage('sensor',this)"><span></span>Sensor</button>
+        <button class="nav-btn" onclick="showPage('scheduler',this)"><span></span>Scheduler</button>
+        <button class="nav-btn" onclick="showPage('filesystem',this)"><span></span>File System</button>
+        <button class="nav-btn" onclick="showPage('events',this)"><span></span>Events</button>
+        <button class="nav-btn" onclick="showPage('export',this)"><span></span>Export</button>
+      </div>
+       
+<div class="nav-right">
+  <div id="connDot"></div>
+  <span id="connLabel"></span>
+
+  <!-- Bangladesh Flag -->
+  <div style="
+    width: 30px; 
+    height: 18px; 
+    background: green; 
+    position: relative; 
+    border: 1px solid #333;
+  ">
+    <div style="
+      width: 8px; 
+      height: 8px; 
+      background: red; 
+      border-radius: 50%; 
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%);
+    "></div>
+  </div>
+</div>
+
+        <!-- <button class="btn-cfg" onclick="openModal()">⚙ Config</button> -->
+      </div>
+    </nav>
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="ticker">
+        <div class="ticker-lbl">⚡ LIVE</div>
+        <div class="ticker-inner">
+          <div class="ticker-scroll">
+            <span><span class="tk">N1-MAG: </span><span class="tv" id="tk-n1">--</span></span>
+            <span><span class="tk">N2-MAG: </span><span class="tv" id="tk-n2">--</span></span>
+            <span><span class="tk">AVG: </span><span class="tv" id="tk-avg">--</span></span>
+            <span><span class="tk">N1-SLOPE: </span><span class="tv" id="tk-slope1">--</span></span>
+            <span><span class="tk">N2-SLOPE: </span><span class="tv" id="tk-slope2">--</span></span>
+            <span><span class="tk">STATUS: </span><span class="tv" id="tk-status">MONITORING</span></span>
+            <span><span class="tk">UPTIME: </span><span class="tv" id="tk-uptime">--</span></span>
+            <span><span class="tk">N1-MAG: </span><span class="tv" id="tk-n1b">--</span></span>
+            <span><span class="tk">N2-MAG: </span><span class="tv" id="tk-n2b">--</span></span>
+            <span><span class="tk">AVG: </span><span class="tv" id="tk-avgb">--</span></span>
+            <span><span class="tk">STATUS: </span><span class="tv" id="tk-statusb">MONITORING</span></span>
+            <span><span class="tk">UPTIME: </span><span class="tv" id="tk-uptimeb">--</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-banner" id="alertBanner">
+        <div class="a-dot"></div>
+        <div class="a-text" id="alertText">🟢 SYSTEM NORMAL — No seismic activity detected</div>
+        <div class="a-time" id="alertTime">--:--:--</div>
+      </div>
+
+      <!-- 2 sensor nodes + system summary -->
+      <div class="g3">
+        <div class="node-card offline" id="nc1">
+          <div class="node-hdr">
+            <div class="s-dot off" id="dot1"></div>NODE-01 · SENSOR-A
+          </div>
+          <div class="node-mag" id="nc1mag">– g</div>
+          <div class="node-sub">MPU6050 · ESP32 · Direct WiFi</div>
+          <div class="node-xyz" id="nc1xyz"><span>X: –</span><span>Y: –</span><span>Z: –</span></div>
+        </div>
+        <div class="node-card offline" id="nc2">
+          <div class="node-hdr">
+            <div class="s-dot off" id="dot2"></div>NODE-02 · SENSOR-B
+          </div>
+          <div class="node-mag" id="nc2mag">– g</div>
+          <div class="node-sub">MPU6050 · ESP32 · Direct WiFi</div>
+          <div class="node-xyz" id="nc2xyz"><span>X: –</span><span>Y: –</span><span>Z: –</span></div>
+        </div>
+        <!-- System Summary (replaces gateway/actuator card) -->
+        <div class="node-card online" id="nc3" style="text-align:left">
+          <div class="node-hdr" style="justify-content:flex-start">
+            <div class="s-dot on"></div>SYSTEM SUMMARY
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:6px">
+            <div class="sr" style="flex-direction:column;align-items:flex-start;gap:2px;border:none;padding:4px 0">
+              <span class="sr-l">Total Packets</span><span class="sr-v g" id="ss-pkt">–</span>
+            </div>
+            <div class="sr" style="flex-direction:column;align-items:flex-start;gap:2px;border:none;padding:4px 0">
+              <span class="sr-l">Total Events</span><span class="sr-v a" id="ss-ev">–</span>
+            </div>
+            <div class="sr" style="flex-direction:column;align-items:flex-start;gap:2px;border:none;padding:4px 0">
+              <span class="sr-l">N1 Slope</span><span class="sr-v b" id="ss-s1">–</span>
+            </div>
+            <div class="sr" style="flex-direction:column;align-items:flex-start;gap:2px;border:none;padding:4px 0">
+              <span class="sr-l">N2 Slope</span><span class="sr-v p" id="ss-s2">–</span>
+            </div>
+            <div class="sr" style="flex-direction:column;align-items:flex-start;gap:2px;border:none;padding:4px 0">
+              <span class="sr-l">Avg Magnitude</span><span class="sr-v" id="ss-avg">–</span>
+            </div>
+            <div class="sr" style="flex-direction:column;align-items:flex-start;gap:2px;border:none;padding:4px 0">
+              <span class="sr-l">Alert State</span><span id="ss-state" class="badge ok">NORMAL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">📈</div>Live Magnitude (g)
+            </div><span class="badge info">LIVE</span>
+          </div>
+          <div class="cw"><canvas id="magChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">📉</div>Regression Slope
+            </div><span class="badge info">LIVE</span>
+          </div>
+          <div class="cw"><canvas id="slopeChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">⚡</div>Detection Thresholds
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <div class="thresh-item"><span class="thresh-name">Warning Level</span>
+              <div class="thresh-track">
+                <div class="thresh-fill" style="width:50%;background:linear-gradient(90deg,#8bc34a,#ff8f00)"></div>
+              </div><span class="thresh-value" style="color:var(--amber)">0.20 g</span>
+            </div>
+            <div class="thresh-item"><span class="thresh-name">Earthquake Level</span>
+              <div class="thresh-track">
+                <div class="thresh-fill" style="width:100%;background:linear-gradient(90deg,#ff8f00,#c0392b)"></div>
+              </div><span class="thresh-value" style="color:var(--red)">0.40 g</span>
+            </div>
+            <div class="thresh-item"><span class="thresh-name">Slope Trigger</span>
+              <div class="thresh-track">
+                <div class="thresh-fill" style="width:30%;background:linear-gradient(90deg,#4a7c2c,#006699)"></div>
+              </div><span class="thresh-value" style="color:var(--blue)">0.008</span>
+            </div>
+          </div>
+          <div class="sr"><span class="sr-l">Min Detection Time</span><span class="sr-v b">500 ms</span></div>
+          <div class="sr"><span class="sr-l">Regression Samples</span><span class="sr-v">20</span></div>
+          <div class="sr"><span class="sr-l">Node Timeout</span><span class="sr-v">5 000 ms</span></div>
+          <div class="sr"><span class="sr-l">Push Interval</span><span class="sr-v b">5 000 ms</span></div>
+          <div class="sr"><span class="sr-l">Architecture</span><span class="badge ok">Direct Push</span></div>
+        </div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">📡</div>Node Statistics
+            </div>
+          </div>
+          <div class="sr"><span class="sr-l">N1 Total Readings</span><span class="sr-v g" id="gPkt1">–</span></div>
+          <div class="sr"><span class="sr-l">N2 Total Readings</span><span class="sr-v b" id="gPkt2">–</span></div>
+          <div class="sr"><span class="sr-l">Total Events</span><span class="sr-v a" id="gTotalEv">–</span></div>
+          <div class="sr"><span class="sr-l">N1 Earthquake</span><span class="sr-v r" id="gEQ1">–</span></div>
+          <div class="sr"><span class="sr-l">N2 Earthquake</span><span class="sr-v r" id="gEQ2">–</span></div>
+          <div class="sr"><span class="sr-l">Scheduler Mode</span><span class="sr-v g" id="gSched">–</span></div>
+          <div class="sr"><span class="sr-l">Session Uptime</span><span class="sr-v g" id="gUptime">–</span></div>
+        </div>
+      </div>
+
+      <div class="card mb">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">💻</div>System Kernel Log
+          </div><span class="badge ok">● RUNNING</span>
+        </div>
+        <div class="terminal" id="sysLog"></div>
+      </div>
+    </div>
+
+    <!-- ══ SENSOR ══ -->
+    <div class="page" id="page-sensor">
+      <div class="g2">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">📡</div>Node 1 — Accelerometer (g)
+            </div><span class="badge n1">NODE_1</span>
+          </div>
+          <div class="cw-md"><canvas id="accelChart1"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">📡</div>Node 2 — Accelerometer (g)
+            </div><span class="badge n2">NODE_2</span>
+          </div>
+          <div class="cw-md"><canvas id="accelChart2"></canvas></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">🔄</div>Node 1 — Gyroscope (rad/s)
+            </div>
+          </div>
+          <div class="cw"><canvas id="gyroChart1"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">🔄</div>Node 2 — Gyroscope (rad/s)
+            </div>
+          </div>
+          <div class="cw"><canvas id="gyroChart2"></canvas></div>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">📋</div>Recent Sensor Readings
+          </div><span id="sensorCount" class="badge info">0 rows</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Node</th>
+                <th>Magnitude</th>
+                <th>Accel X</th>
+                <th>Accel Y</th>
+                <th>Accel Z</th>
+                <th>Slope</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="sensorTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCHEDULER ══ -->
+    <div class="page" id="page-scheduler">
+      <div class="g2">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">🔄</div>Scheduling Info
+            </div>
+          </div>
+          <div class="sr"><span class="sr-l">Active Algorithm</span><span class="sr-v g" id="schedCurrent">–</span>
+          </div>
+          <div class="sr"><span class="sr-l">Context Switches</span><span class="sr-v p" id="schedCtx">–</span></div>
+          <div class="sr"><span class="sr-l">Total Tasks / Node</span><span class="sr-v b">6</span></div>
+          <div class="sr"><span class="sr-l">Architecture</span><span class="badge ok">Direct Push</span></div>
+          <div style="margin-top:14px">
+            <div class="os-concept">
+              <b>Round Robin:</b> Equal time slice per task, cycled in order.<br><br>
+              <b>Priority:</b> Lowest PID = highest priority, runs first when READY.<br><br>
+              <span class="c-tag">FreeRTOS-style</span><span class="c-tag">Preemptive</span><span
+                class="c-tag">ESP32</span><span class="c-tag">No Gateway</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">🥧</div>CPU Time Distribution
+            </div>
+          </div>
+          <div class="cw-md"><canvas id="cpuPieChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">📋</div>Process Control Block (PCB) Table
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th>Process</th>
+                <th>Node</th>
+                <th>Priority</th>
+                <th>State</th>
+                <th>CPU Time</th>
+                <th>Execs</th>
+                <th>Interval</th>
+                <th>Load</th>
+              </tr>
+            </thead>
+            <tbody id="pcbTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">📊</div>Gantt Chart — CPU Utilisation
+          </div><span class="badge purple">Proportional</span>
+        </div>
+        <div id="ganttChart" style="padding:6px 0"></div>
+      </div>
+      <div class="card">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">📈</div>Algorithm Comparison — RR vs Priority
+          </div>
+        </div>
+        <div class="cw-lg"><canvas id="schedCompChart"></canvas></div>
+        <div style="font-size:.74em;margin-top:8px;color:var(--text3);font-family:var(--mono)">Average CPU time per task
+          across both nodes under each scheduling algorithm.</div>
+      </div>
+    </div>
+
+    <!-- ══ FILESYSTEM ══ -->
+    <div class="page" id="page-filesystem">
+      <div class="g2">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">💾</div>SPIFFS File System (per node)
+            </div>
+          </div>
+          <div class="sr"><span class="sr-l">Total Capacity</span><span class="sr-v b">1 024 KB</span></div>
+          <div class="sr"><span class="sr-l">Estimated Used</span><span class="sr-v a" id="fsUsed">–</span></div>
+          <div class="sr"><span class="sr-l">Estimated Free</span><span class="sr-v g" id="fsAvail">–</span></div>
+          <div class="sr"><span class="sr-l">File System</span><span class="sr-v">SPIFFS (FAT-like)</span></div>
+          <div class="sr"><span class="sr-l">Max File Size</span><span class="sr-v">8 KB</span></div>
+          <div class="sr"><span class="sr-l">Log Rotation</span><span class="badge ok">Enabled</span></div>
+          <div style="margin-top:14px">
+            <div style="font-family:var(--mono);font-size:.72em;color:var(--text3);margin-bottom:6px">Storage
+              Utilisation (estimate)</div>
+            <div class="stor-bar-wrap">
+              <div class="stor-bar" id="storageBar" style="width:0%"></div>
+            </div>
+            <div class="stor-pct" id="storagePct">0%</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">🗃</div>OS File Management
+            </div>
+          </div>
+          <div class="os-concept">
+            <b>File Descriptors:</b> Integer FD (0–4) per open file. Each node maintains a local <code
+              style="color:var(--g2)">fdTable[]</code>.<br><br>
+            <b>FAT Simulation:</b> Linked-list allocation. Dir entries store path, size, access time.<br><br>
+            <b>Log Rotation:</b> File &gt; 8 KB → close → delete → recreate.<br><br>
+            <b>Types:</b> <span class="c-tag">/sensor.log</span><span class="c-tag">/alert.log</span><span
+              class="c-tag">/system.log</span><br>
+            <b>Syscalls:</b> <span class="c-tag">fsOpen()</span><span class="c-tag">fsRead()</span><span
+              class="c-tag">fsWrite()</span><span class="c-tag">fsClose()</span><br><br>
+            <b>Mirrored:</b> Each log line is also pushed to <code style="color:var(--g2)">system_logs</code> table in
+            Supabase.
+          </div>
+        </div>
+      </div>
+      <div class="g2 mb">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">📁</div>Log File Browser
+            </div>
+          </div>
+          <div id="fileTree" style="padding:4px 0">
+            <div style="font-family:var(--mono);font-size:.76em;color:var(--text3);padding:20px;text-align:center">
+              Awaiting connection…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">
+              <div class="ci">📄</div>File Viewer
+            </div><span id="viewingFile" class="badge info" style="display:none">–</span>
+          </div>
+          <div class="file-viewer" id="fileViewer">
+            <div style="color:rgba(139,195,74,.35);font-family:var(--mono);font-size:.8em">Select a file to view its
+              contents.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">📊</div>Log Entry Distribution
+          </div>
+        </div>
+        <div class="cw-md"><canvas id="logDistChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ══ EVENTS ══ -->
+    <div class="page" id="page-events">
+      <div class="g4 mb">
+        <div class="ev-card r">
+          <div class="ev-lbl">Earthquakes</div>
+          <div class="ev-num r" id="evEQ">–</div>
+        </div>
+        <div class="ev-card a">
+          <div class="ev-lbl">Warnings</div>
+          <div class="ev-num a" id="evWarn">–</div>
+        </div>
+        <div class="ev-card g">
+          <div class="ev-lbl">All Clear</div>
+          <div class="ev-num g" id="evClear">–</div>
+        </div>
+        <div class="ev-card b">
+          <div class="ev-lbl">Peak Magnitude</div>
+          <div class="ev-num b" id="evPeak">–</div>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">📈</div>Events Over Time
+          </div>
+        </div>
+        <div class="cw-md"><canvas id="evTimeChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">📋</div>Earthquake Event Log
+          </div><span id="evTotal" class="badge info">0 events</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Node</th>
+                <th>Type</th>
+                <th>Magnitude</th>
+                <th>Slope</th>
+              </tr>
+            </thead>
+            <tbody id="evTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ EXPORT ══ -->
+    <div class="page" id="page-export">
+      <div class="g4 mb">
+        <div class="ev-card g">
+          <div class="ev-lbl">Sensor Readings</div>
+          <div class="ev-num g" id="expSensorCount">–</div>
+        </div>
+        <div class="ev-card b">
+          <div class="ev-lbl">Earthquake Events</div>
+          <div class="ev-num b" id="expEvCount">–</div>
+        </div>
+        <div class="ev-card a">
+          <div class="ev-lbl">System Logs</div>
+          <div class="ev-num a" id="expLogCount">–</div>
+        </div>
+        <div class="ev-card r">
+          <div class="ev-lbl">Scheduler Records</div>
+          <div class="ev-num r" id="expSchedCount">–</div>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">⬇</div>Export Data
+          </div><span class="badge info">CSV &amp; JSON</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
+          <div style="background:var(--g8);border:1px solid var(--rim);border-radius:12px;padding:18px">
+            <div style="font-family:var(--mono);font-size:.75em;color:var(--g1);font-weight:700;margin-bottom:8px">📡
+              SENSOR READINGS</div>
+            <div style="font-family:var(--mono);font-size:.68em;color:var(--text3);margin-bottom:12px">node_id, accel,
+              gyro, magnitude, slope</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-p" style="flex:1;padding:8px;font-size:.72em"
+                onclick="exportData('sensor_readings','csv')">⬇ CSV</button>
+              <button class="btn-p"
+                style="flex:1;padding:8px;font-size:.72em;background:linear-gradient(135deg,#006699,#004c73)"
+                onclick="exportData('sensor_readings','json')">⬇ JSON</button>
+            </div>
+          </div>
+          <div style="background:var(--g8);border:1px solid var(--rim);border-radius:12px;padding:18px">
+            <div style="font-family:var(--mono);font-size:.75em;color:var(--red);font-weight:700;margin-bottom:8px">🚨
+              EARTHQUAKE EVENTS</div>
+            <div style="font-family:var(--mono);font-size:.68em;color:var(--text3);margin-bottom:12px">node_id,
+              event_type, magnitude, slope</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-p" style="flex:1;padding:8px;font-size:.72em"
+                onclick="exportData('earthquake_events','csv')">⬇ CSV</button>
+              <button class="btn-p"
+                style="flex:1;padding:8px;font-size:.72em;background:linear-gradient(135deg,#006699,#004c73)"
+                onclick="exportData('earthquake_events','json')">⬇ JSON</button>
+            </div>
+          </div>
+          <div style="background:var(--g8);border:1px solid var(--rim);border-radius:12px;padding:18px">
+            <div style="font-family:var(--mono);font-size:.75em;color:var(--purple);font-weight:700;margin-bottom:8px">
+              📁 SYSTEM LOGS</div>
+            <div style="font-family:var(--mono);font-size:.68em;color:var(--text3);margin-bottom:12px">node_id,
+              log_level, source, message</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-p" style="flex:1;padding:8px;font-size:.72em"
+                onclick="exportData('system_logs','csv')">⬇ CSV</button>
+              <button class="btn-p"
+                style="flex:1;padding:8px;font-size:.72em;background:linear-gradient(135deg,#006699,#004c73)"
+                onclick="exportData('system_logs','json')">⬇ JSON</button>
+            </div>
+          </div>
+          <div style="background:var(--g8);border:1px solid var(--rim);border-radius:12px;padding:18px">
+            <div style="font-family:var(--mono);font-size:.75em;color:var(--amber);font-weight:700;margin-bottom:8px">⚙
+              SCHEDULER LOG</div>
+            <div style="font-family:var(--mono);font-size:.68em;color:var(--text3);margin-bottom:12px">node_id,
+              task_name, cpu_time_ms, algorithm</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-p" style="flex:1;padding:8px;font-size:.72em"
+                onclick="exportData('os_scheduler_log','csv')">⬇ CSV</button>
+              <button class="btn-p"
+                style="flex:1;padding:8px;font-size:.72em;background:linear-gradient(135deg,#006699,#004c73)"
+                onclick="exportData('os_scheduler_log','json')">⬇ JSON</button>
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--rim2);padding-top:16px">
+          <div style="font-family:var(--mono);font-size:.78em;color:var(--g1);font-weight:700;margin-bottom:12px">⬇
+            Export All Tables</div>
+          <button class="btn-p" style="padding:12px 28px;font-size:.8em" onclick="exportAll()">⬇ Export
+            Everything</button>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">🔍</div>Custom Export
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:12px">
+          <div><label class="f-lbl">Table</label>
+            <select id="expTable" class="f-inp" style="cursor:pointer">
+              <option value="sensor_readings">sensor_readings</option>
+              <option value="earthquake_events">earthquake_events</option>
+              <option value="system_logs">system_logs</option>
+              <option value="os_scheduler_log">os_scheduler_log</option>
+            </select>
+          </div>
+          <div><label class="f-lbl">Max Rows</label>
+            <select id="expLimit" class="f-inp" style="cursor:pointer">
+              <option value="100">100 rows</option>
+              <option value="500">500 rows</option>
+              <option value="1000" selected>1000 rows</option>
+              <option value="5000">5000 rows</option>
+            </select>
+          </div>
+          <button class="btn-p" style="padding:10px 18px;font-size:.78em;white-space:nowrap"
+            onclick="customExport('csv')">⬇ CSV</button>
+          <button class="btn-p"
+            style="padding:10px 18px;font-size:.78em;white-space:nowrap;background:linear-gradient(135deg,#006699,#004c73)"
+            onclick="customExport('json')">⬇ JSON</button>
+        </div>
+        <div id="expStatus" style="font-family:var(--mono);font-size:.72em;color:var(--text3);min-height:20px"></div>
+      </div>
+      <div class="card">
+        <div class="ch">
+          <div class="ct">
+            <div class="ci">👁</div>Export Preview
+          </div><span id="expPreviewBadge" class="badge info" style="display:none">0 rows</span>
+        </div>
+        <div style="overflow-x:auto;max-height:340px;overflow-y:auto">
+          <table class="dtbl" id="expPreviewTable">
+            <thead id="expPreviewHead"></thead>
+            <tbody id="expPreviewBody">
+              <tr>
+                <td colspan="10" style="text-align:center;color:var(--text3);padding:30px">Click any Export button to
+                  preview data here</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <footer><span>EarthQuakeOS v2.0.0</span> · OS Lab Project · Daffodil International University · Direct-Push
+      Architecture · ESP32 × 2 + MPU6050 × 2</footer>
+  </div><!-- /app -->
+
+  <script>
+    /* ── CONFIG ── */
+    let SUPABASE_URL = localStorage.getItem('eq_url') || 'https://shexpubibxvgvaiqaajl.supabase.co';
+    let SUPABASE_KEY = localStorage.getItem('eq_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNoZXhwdWJpYnh2Z3ZhaXFhYWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzAwMTQsImV4cCI6MjA5MDY0NjAxNH0.PB9JtqGniv6CmqkXtz03NgPjsblf5sLBCZMy2Wk2SGE';
+    let sb = null;
+    const tS = Date.now();
+
+    function openModal() { document.getElementById('cfgUrl').value = SUPABASE_URL; document.getElementById('cfgKey').value = SUPABASE_KEY; document.getElementById('cfgModal').classList.add('open'); }
+    function closeModal() { document.getElementById('cfgModal').classList.remove('open'); }
+    function saveConfig() { SUPABASE_URL = document.getElementById('cfgUrl').value.trim(); SUPABASE_KEY = document.getElementById('cfgKey').value.trim(); localStorage.setItem('eq_url', SUPABASE_URL); localStorage.setItem('eq_key', SUPABASE_KEY); closeModal(); initSB(); }
+
+    function initSB() {
+      if (!SUPABASE_URL || !SUPABASE_KEY) { openModal(); return; }
+      try {
+        sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        document.getElementById('connDot').classList.add('on');
+        document.getElementById('connLabel').textContent = 'CONNECTED';
+        document.getElementById('connLabel').style.color = '#a5d6a7';
+        addLog('EarthQuakeOS v2.0.0 kernel boot – direct-push arch', 'sys');
+        addLog('Supabase → ' + SUPABASE_URL.split('//')[1].split('.')[0] + '…', 'sys');
+        addLog('Architecture: NODE_1 + NODE_2 push directly (no gateway)', 'info');
+        addLog('Tables: sensor_readings | earthquake_events | system_logs | os_scheduler_log', 'info');
+        startPolling();
+      } catch (e) { addLog('Supabase init failed: ' + e.message, 'error'); }
+    }
+
+    /* ── NAV ── */
+    function showPage(id, btn) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+
+    /* ── CLOCK ── */
+    setInterval(() => {
+      document.getElementById('clockEl').textContent = new Date().toTimeString().slice(0, 8);
+      const up = Date.now() - tS, m = Math.floor(up / 60000), s = Math.floor((up % 60000) / 1000);
+      const us = `${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+      document.getElementById('gUptime').textContent = us;
+      ['tk-uptime', 'tk-uptimeb'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = us; });
+    }, 1000);
+
+    /* ── LOG ── */
+    const logBuf = [];
+    function addLog(msg, type = 'info') {
+      const ts = new Date().toTimeString().slice(0, 8);
+      const src = { sys: '[KERNEL]', warn: '[WARN]  ', error: '[ERROR] ', alert: '[ALERT] ', info: '[INFO]  ' }[type] || '[INFO]  ';
+      logBuf.push({ ts, src, msg, type });
+      if (logBuf.length > 100) logBuf.shift();
+      const el = document.getElementById('sysLog');
+      el.innerHTML = logBuf.map(l => `<div class="log-e log-${l.type}"><span class="l-ts">${l.ts}</span><span class="l-src">${l.src}</span><span class="l-msg">${l.msg}</span></div>`).join('');
+      el.scrollTop = el.scrollHeight;
+    }
+
+    /* ── CHARTS ── */
+    const cB = {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+      plugins: { legend: { labels: { color: '#558b2f', font: { family: 'Space Mono', size: 10 }, boxWidth: 12, padding: 12 } } },
+      scales: {
+        x: { ticks: { color: '#7a9a60', font: { size: 9 }, maxTicksLimit: 8 }, grid: { color: 'rgba(74,124,44,.08)' }, border: { color: 'rgba(74,124,44,.15)' } },
+        y: { ticks: { color: '#7a9a60', font: { size: 9 } }, grid: { color: 'rgba(74,124,44,.08)' }, border: { color: 'rgba(74,124,44,.15)' } }
+      }
+    };
+    const mkDS = (l, c, d = []) => ({ label: l, data: [...d], borderColor: c, backgroundColor: c + '18', pointRadius: 0, pointHoverRadius: 4, tension: .35, borderWidth: 1.8, fill: true });
+    const lineC = (id, ds) => new Chart(document.getElementById(id), { type: 'line', data: { labels: [], datasets: ds }, options: { ...cB, animation: { duration: 300 } } });
+    const MAX = 40;
+    let magChart, slopeChart, accelChart1, accelChart2, gyroChart1, gyroChart2, cpuPie, schedComp, logDist, evTime;
+
+    function setupCharts() {
+      magChart = lineC('magChart', [mkDS('Node 1', '#4a7c2c'), mkDS('Node 2', '#006699'), mkDS('Average', '#e65100')]);
+      slopeChart = lineC('slopeChart', [mkDS('N1 Slope', '#4a7c2c'), mkDS('N2 Slope', '#006699'), mkDS('Threshold', '#c0392b')]);
+      accelChart1 = lineC('accelChart1', [mkDS('Ax', '#4a7c2c'), mkDS('Ay', '#006699'), mkDS('Az', '#e65100')]);
+      accelChart2 = lineC('accelChart2', [mkDS('Ax', '#c0392b'), mkDS('Ay', '#6a1b9a'), mkDS('Az', '#006699')]);
+      gyroChart1 = lineC('gyroChart1', [mkDS('Gx', '#4a7c2c'), mkDS('Gy', '#006699'), mkDS('Gz', '#6a1b9a')]);
+      gyroChart2 = lineC('gyroChart2', [mkDS('Gx', '#c0392b'), mkDS('Gy', '#6a1b9a'), mkDS('Gz', '#e65100')]);
+
+      cpuPie = new Chart(document.getElementById('cpuPieChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['READ_SENSOR', 'PROCESS_DATA', 'EQ_DETECT', 'SUPABASE_PUSH', 'FILE_LOG', 'SYS_MONITOR'],
+          datasets: [{
+            data: [0, 0, 0, 0, 0, 0],
+            backgroundColor: ['#e8f5e9aa', '#e3f2fdaa', '#fff8e1aa', '#f3e5f5aa', '#fce4ecaa', '#e0f2f1aa'],
+            borderColor: ['#4a7c2c', '#006699', '#e65100', '#6a1b9a', '#c0392b', '#00695c'], borderWidth: 2, hoverBorderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '62%', animation: { animateRotate: true, duration: 800 },
+          plugins: { legend: { labels: { color: '#558b2f', font: { family: 'Space Mono', size: 10 }, boxWidth: 12, padding: 10 } } }
+        }
+      });
+
+      schedComp = new Chart(document.getElementById('schedCompChart'), {
+        type: 'bar',
+        data: {
+          labels: ['READ_SENSOR', 'PROCESS_DATA', 'EQ_DETECT', 'SUPABASE_PUSH', 'FILE_LOG', 'SYS_MONITOR'],
+          datasets: [{ label: 'Round Robin (ms)', data: [0, 0, 0, 0, 0, 0], backgroundColor: 'rgba(0,102,153,0.25)', borderColor: '#006699', borderWidth: 1, borderRadius: 5 },
+          { label: 'Priority (ms)', data: [0, 0, 0, 0, 0, 0], backgroundColor: 'rgba(74,124,44,0.25)', borderColor: '#4a7c2c', borderWidth: 1, borderRadius: 5 }]
+        },
+        options: { ...cB, animation: { duration: 600 } }
+      });
+
+      logDist = new Chart(document.getElementById('logDistChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['INFO', 'WARN', 'ERROR', 'ALERT', 'SYS'],
+          datasets: [{
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: ['rgba(0,102,153,.2)', 'rgba(230,81,0,.2)', 'rgba(192,57,43,.2)', 'rgba(255,143,0,.2)', 'rgba(74,124,44,.2)'],
+            borderColor: ['#006699', '#e65100', '#c0392b', '#ff8f00', '#4a7c2c'], borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '55%', animation: { duration: 800 },
+          plugins: { legend: { labels: { color: '#558b2f', font: { family: 'Space Mono', size: 10 }, boxWidth: 12 } } }
+        }
+      });
+
+      evTime = new Chart(document.getElementById('evTimeChart'), {
+        type: 'bar',
+        data: {
+          labels: [], datasets: [
+            { label: 'Earthquake', data: [], backgroundColor: 'rgba(192,57,43,.45)', borderColor: '#c0392b', borderWidth: 1, borderRadius: 4 },
+            { label: 'Warning', data: [], backgroundColor: 'rgba(230,81,0,.45)', borderColor: '#e65100', borderWidth: 1, borderRadius: 4 }]
+        },
+        options: { ...cB }
+      });
+    }
+
+    function pushBulk(chart, labels, arrs) {
+      chart.data.labels = labels;
+      arrs.forEach((a, i) => { if (chart.data.datasets[i]) chart.data.datasets[i].data = a; });
+      chart.update('none');
+    }
+
+    /* ── NODE CARD ── */
+    function setNode(n, online, mag, x, y, z, r) {
+      document.getElementById('nc' + n).className = 'node-card ' + (online ? 'online' : 'offline');
+      document.getElementById('dot' + n).className = 's-dot ' + (online ? 'on' : 'off');
+      const mEl = document.getElementById('nc' + n + 'mag');
+      const xEl = document.getElementById('nc' + n + 'xyz');
+      if (online) {
+        mEl.className = 'node-mag ' + (r && r.earthquake ? 'crit' : r && r.warning ? 'warn' : '');
+        mEl.textContent = mag.toFixed(3) + ' g';
+        if (xEl) xEl.innerHTML = `<span>X:${x.toFixed(2)}</span><span>Y:${y.toFixed(2)}</span><span>Z:${z.toFixed(2)}</span>`;
+      } else {
+        mEl.className = 'node-mag'; mEl.textContent = '– g';
+        if (xEl) xEl.innerHTML = '<span>X: –</span><span>Y: –</span><span>Z: –</span>';
+      }
+    }
+
+    /* ── NODE TIMEOUT ── */
+    let lastSeen1 = 0, lastSeen2 = 0;
+    const NODE_TIMEOUT = 30000; // 30 s (push interval is 5 s)
+
+    /* ═══════════════════════════════
+       FETCH FUNCTIONS (per-node)
+    ═══════════════════════════════ */
+
+    async function fetchSensor() {
+      // Fetch latest 50 rows for each node in parallel
+      const [r1res, r2res] = await Promise.all([
+        sb.from('sensor_readings').select('*').eq('node_id', 'NODE_1').order('created_at', { ascending: false }).limit(50),
+        sb.from('sensor_readings').select('*').eq('node_id', 'NODE_2').order('created_at', { ascending: false }).limit(50),
+      ]);
+      if (r1res.error) addLog('[NODE_1 readings] ' + r1res.error.message, 'error');
+      if (r2res.error) addLog('[NODE_2 readings] ' + r2res.error.message, 'error');
+
+      const n1 = r1res.data || [];
+      const n2 = r2res.data || [];
+      const r1 = n1[0], r2 = n2[0];
+
+      // Timeout check
+      if (r1) { lastSeen1 = Date.now(); }
+      if (r2) { lastSeen2 = Date.now(); }
+      const n1Online = Date.now() - lastSeen1 < NODE_TIMEOUT && lastSeen1 > 0;
+      const n2Online = Date.now() - lastSeen2 < NODE_TIMEOUT && lastSeen2 > 0;
+
+      // Magnitudes
+      const m1 = +r1?.magnitude || 0, m2 = +r2?.magnitude || 0;
+      const avg = (m1 + m2) / 2;
+      const sl1 = +r1?.regression_slope || 0, sl2 = +r2?.regression_slope || 0;
+      const ts = new Date().toTimeString().slice(0, 8);
+
+      // Ticker
+      const setTk = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      setTk('tk-n1', m1.toFixed(3) + 'g'); setTk('tk-n1b', m1.toFixed(3) + 'g');
+      setTk('tk-n2', m2.toFixed(3) + 'g'); setTk('tk-n2b', m2.toFixed(3) + 'g');
+      setTk('tk-avg', avg.toFixed(3) + 'g'); setTk('tk-avgb', avg.toFixed(3) + 'g');
+      setTk('tk-slope1', sl1.toFixed(5)); setTk('tk-slope2', sl2.toFixed(5));
+      const isEq = r1?.earthquake || r2?.earthquake, isWarn = r1?.warning || r2?.warning;
+      const statusTxt = isEq ? '⚠ EQ' : isWarn ? '⚠ WARN' : 'NORMAL';
+      setTk('tk-status', statusTxt); setTk('tk-statusb', statusTxt);
+
+      // Node cards
+      if (n1Online && r1) setNode(1, true, m1, +r1.accel_x || 0, +r1.accel_y || 0, +r1.accel_z || 0, r1);
+      else setNode(1, false, 0, 0, 0, 0, null);
+      if (n2Online && r2) setNode(2, true, m2, +r2.accel_x || 0, +r2.accel_y || 0, +r2.accel_z || 0, r2);
+      else setNode(2, false, 0, 0, 0, 0, null);
+
+      // System summary card
+      document.getElementById('ss-s1').textContent = sl1.toFixed(5);
+      document.getElementById('ss-s2').textContent = sl2.toFixed(5);
+      document.getElementById('ss-avg').textContent = avg.toFixed(3) + ' g';
+      const stateEl = document.getElementById('ss-state');
+      stateEl.className = 'badge ' + (isEq ? 'err' : isWarn ? 'warn' : 'ok');
+      stateEl.textContent = isEq ? 'EARTHQUAKE' : isWarn ? 'WARNING' : 'NORMAL';
+
+      // Alert banner
+      const banner = document.getElementById('alertBanner');
+      document.getElementById('alertTime').textContent = ts;
+      if (isEq) { banner.className = 'alert-banner crit'; document.getElementById('alertText').textContent = `🚨 CRITICAL — EARTHQUAKE DETECTED! Avg Magnitude: ${avg.toFixed(3)}g`; }
+      else if (isWarn) { banner.className = 'alert-banner warn'; document.getElementById('alertText').textContent = `⚠️ WARNING — Elevated vibration · Avg Magnitude: ${avg.toFixed(3)}g`; }
+      else { banner.className = 'alert-banner'; document.getElementById('alertText').textContent = '🟢 SYSTEM NORMAL — No seismic activity detected'; }
+
+      // Stats
+      document.getElementById('gPkt1').textContent = n1.length;
+      document.getElementById('gPkt2').textContent = n2.length;
+      const ss_pkt = document.getElementById('ss-pkt'); if (ss_pkt) ss_pkt.textContent = n1.length + n2.length;
+
+      // EQ counts per node
+      const eq1 = n1.filter(x => x.earthquake).length, eq2 = n2.filter(x => x.earthquake).length;
+      document.getElementById('gEQ1').textContent = eq1;
+      document.getElementById('gEQ2').textContent = eq2;
+
+      // Charts – use per-node time labels, slice to MAX
+      const rev1 = [...n1].reverse().slice(-MAX);
+      const rev2 = [...n2].reverse().slice(-MAX);
+      const tl1 = rev1.map(x => new Date(x.created_at).toTimeString().slice(3, 8));
+      const tl2 = rev2.map(x => new Date(x.created_at).toTimeString().slice(3, 8));
+
+      // Mag chart: align by index (both arrays independently sliced)
+      const len = Math.max(rev1.length, rev2.length);
+      const tl = rev1.length >= rev2.length ? tl1 : tl2;
+      pushBulk(magChart, tl, [
+        rev1.map(x => +x.magnitude || 0),
+        rev2.map(x => +x.magnitude || 0),
+        Array.from({ length: len }, (_, i) => ((+rev1[i]?.magnitude || 0) + (+rev2[i]?.magnitude || 0)) / 2)
+      ]);
+
+      // Slope chart
+      pushBulk(slopeChart, tl1, [
+        rev1.map(x => +x.regression_slope || 0),
+        rev2.slice(0, rev1.length).map(x => +x.regression_slope || 0),
+        rev1.map(() => 0.008)
+      ]);
+
+      // Accel charts (per node, own time axis)
+      pushBulk(accelChart1, tl1, [rev1.map(x => +x.accel_x || 0), rev1.map(x => +x.accel_y || 0), rev1.map(x => +x.accel_z || 0)]);
+      pushBulk(accelChart2, tl2, [rev2.map(x => +x.accel_x || 0), rev2.map(x => +x.accel_y || 0), rev2.map(x => +x.accel_z || 0)]);
+      pushBulk(gyroChart1, tl1, [rev1.map(x => +x.gyro_x || 0), rev1.map(x => +x.gyro_y || 0), rev1.map(x => +x.gyro_z || 0)]);
+      pushBulk(gyroChart2, tl2, [rev2.map(x => +x.gyro_x || 0), rev2.map(x => +x.gyro_y || 0), rev2.map(x => +x.gyro_z || 0)]);
+
+      // Sensor table: interleave both nodes, sorted by time
+      const combined = [...n1.slice(0, 10), ...n2.slice(0, 10)]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 15);
+      document.getElementById('sensorCount').textContent = combined.length + ' rows';
+      document.getElementById('sensorTbody').innerHTML = combined.map(x => `
+    <tr>
+      <td class="tm">${new Date(x.created_at).toTimeString().slice(0, 8)}</td>
+      <td><span class="badge ${x.node_id === 'NODE_1' ? 'n1' : 'n2'}">${x.node_id}</span></td>
+      <td style="font-family:var(--mono)">${(+x.magnitude || 0).toFixed(3)} g</td>
+      <td>${(+x.accel_x || 0).toFixed(3)}</td>
+      <td>${(+x.accel_y || 0).toFixed(3)}</td>
+      <td>${(+x.accel_z || 0).toFixed(3)}</td>
+      <td style="color:var(--text3)">${(+x.regression_slope || 0).toFixed(5)}</td>
+      <td>${x.earthquake ? '<span class="badge err">EQ</span>' : x.warning ? '<span class="badge warn">WARN</span>' : '<span class="badge ok">OK</span>'}</td>
+    </tr>`).join('');
+    }
+
+    /* PCB metadata (matches firmware task list) */
+    const pcbMeta = [
+      { pid: 1, name: 'READ_SENSOR', pri: 1, iv: '50 ms', col: '#4a7c2c' },
+      { pid: 2, name: 'PROCESS_DATA', pri: 2, iv: '50 ms', col: '#006699' },
+      { pid: 3, name: 'EQ_DETECT', pri: 2, iv: '100 ms', col: '#e65100' },
+      { pid: 4, name: 'SUPABASE_PUSH', pri: 3, iv: '5000 ms', col: '#ff8f00' },
+      { pid: 5, name: 'FILE_LOG', pri: 4, iv: '1000 ms', col: '#6a1b9a' },
+      { pid: 6, name: 'SYS_MONITOR', pri: 5, iv: '1000 ms', col: '#c0392b' },
+    ];
+
+    async function fetchScheduler() {
+      const { data, error } = await sb.from('os_scheduler_log').select('*').order('created_at', { ascending: false }).limit(300);
+      if (error) { addLog('[os_scheduler_log] ' + error.message, 'error'); return; }
+
+      // Aggregate by task_name + algorithm (combine NODE_1 and NODE_2)
+      const agg = {};
+      (data || []).forEach(r => {
+        if (!r.task_name) return;
+        const k = r.task_name + '|' + (r.algorithm || '?');
+        if (!agg[k]) agg[k] = { cpu: 0, exec: 0, algo: r.algorithm || '?', name: r.task_name };
+        agg[k].cpu += +r.cpu_time_ms || 0; agg[k].exec += +r.exec_count || 0;
+      });
+
+      const totals = pcbMeta.map(p => ({
+        ...p,
+        rrCpu: agg[p.name + '|RoundRobin']?.cpu || 0, prCpu: agg[p.name + '|Priority']?.cpu || 0,
+        rrEx: agg[p.name + '|RoundRobin']?.exec || 0, prEx: agg[p.name + '|Priority']?.exec || 0,
+      }));
+      const allCpu = totals.map(t => t.rrCpu + t.prCpu), maxCpu = Math.max(...allCpu, 1);
+
+      // PCB table
+      document.getElementById('pcbTbody').innerHTML = totals.map(t => {
+        const cpu = t.rrCpu + t.prCpu, pct = (cpu / maxCpu * 100).toFixed(0);
+        const pb = t.pri <= 2 ? 'err' : t.pri === 3 ? 'warn' : 'ok', pl = t.pri <= 2 ? 'HIGH' : t.pri === 3 ? 'MED' : 'LOW';
+        return `<tr>
+      <td class="tm">${t.pid}</td>
+      <td><code style="color:var(--g2);font-family:var(--mono)">${t.name}</code></td>
+      <td><span class="badge n1">N1</span> <span class="badge n2">N2</span></td>
+      <td><span class="badge ${pb}">${pl} (${t.pri})</span></td>
+      <td><span class="badge ok">READY</span></td>
+      <td style="color:var(--amber);font-family:var(--mono)">${cpu.toFixed(0)} ms</td>
+      <td style="font-family:var(--mono)">${t.rrEx + t.prEx}</td>
+      <td style="color:var(--text3);font-family:var(--mono)">${t.iv}</td>
+      <td style="min-width:80px"><div style="height:6px;background:var(--g8);border-radius:3px"><div style="height:100%;width:${pct}%;background:${t.col};border-radius:3px;transition:width 1s ease"></div></div></td>
+    </tr>`;
+      }).join('');
+
+      cpuPie.data.datasets[0].data = allCpu; cpuPie.update();
+
+      document.getElementById('ganttChart').innerHTML = totals.map(t => {
+        const cpu = t.rrCpu + t.prCpu, pct = (cpu / maxCpu * 100).toFixed(1);
+        return `<div class="g-row"><div class="g-lbl">${t.name}</div><div class="g-track"><div class="g-fill" style="width:${pct}%;background:linear-gradient(90deg,${t.col}88,${t.col})"><span class="g-fill-lbl">${cpu.toFixed(0)} ms</span></div></div><div class="g-val">${pct}%</div></div>`;
+      }).join('');
+
+      schedComp.data.datasets[0].data = totals.map(t => t.rrCpu);
+      schedComp.data.datasets[1].data = totals.map(t => t.prCpu);
+      schedComp.update();
+
+      let ctx = 0; Object.values(agg).forEach(a => ctx += a.exec);
+      const algo = data && data.length && data[0].algorithm ? data[0].algorithm : '–';
+      document.getElementById('schedCurrent').textContent = algo;
+      document.getElementById('schedCtx').textContent = ctx;
+      document.getElementById('gSched').textContent = algo;
+    }
+
+    async function fetchEvents() {
+      const { data, error } = await sb.from('earthquake_events').select('*').order('created_at', { ascending: false }).limit(100);
+      if (error) { addLog('[earthquake_events] ' + error.message, 'error'); return; }
+      if (!data) return;
+
+      let eq = 0, warn = 0, clear = 0, peak = 0;
+      data.forEach(e => {
+        if (e.event_type === 'EARTHQUAKE') eq++;
+        else if (e.event_type === 'WARNING') warn++;
+        else if (e.event_type === 'CLEAR') clear++;
+        if ((+e.magnitude || 0) > peak) peak = +e.magnitude || 0;
+      });
+      document.getElementById('evEQ').textContent = eq;
+      document.getElementById('evWarn').textContent = warn;
+      document.getElementById('evClear').textContent = clear;
+      document.getElementById('evPeak').textContent = peak.toFixed(3) + ' g';
+      document.getElementById('evTotal').textContent = data.length + ' events';
+      document.getElementById('gTotalEv').textContent = data.length;
+      document.getElementById('ss-ev').textContent = data.length;
+
+      document.getElementById('evTbody').innerHTML = data.slice(0, 30).map(e => `<tr>
+    <td class="tm">${new Date(e.created_at).toLocaleString()}</td>
+    <td><span class="badge ${e.node_id === 'NODE_1' ? 'n1' : 'n2'}">${e.node_id || '–'}</span></td>
+    <td><span class="badge ${e.event_type === 'EARTHQUAKE' ? 'err' : e.event_type === 'WARNING' ? 'warn' : 'ok'}">${e.event_type || '–'}</span></td>
+    <td style="font-family:var(--mono)">${(+e.magnitude || 0).toFixed(3)} g</td>
+    <td style="color:var(--text3);font-family:var(--mono)">${(+e.regression_slope || 0).toFixed(5)}</td>
+  </tr>`).join('');
+
+      // Events over time
+      const days = {};
+      data.forEach(e => { const d = e.created_at?.slice(0, 10); if (!d) return; if (!days[d]) days[d] = { eq: 0, warn: 0 }; if (e.event_type === 'EARTHQUAKE') days[d].eq++; else if (e.event_type === 'WARNING') days[d].warn++; });
+      const dks = Object.keys(days).sort().slice(-14);
+      evTime.data.labels = dks;
+      evTime.data.datasets[0].data = dks.map(d => days[d].eq);
+      evTime.data.datasets[1].data = dks.map(d => days[d].warn);
+      evTime.update();
+    }
+
+    async function fetchLogs() {
+      const { data, error } = await sb.from('system_logs').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) { addLog('[system_logs] ' + error.message, 'error'); return; }
+      if (!data) return;
+
+      // Log level distribution
+      const c = { INFO: 0, WARN: 0, ERROR: 0, ALERT: 0, SYS: 0 };
+      data.forEach(l => { if (c[l.log_level] !== undefined) c[l.log_level]++; });
+      logDist.data.datasets[0].data = Object.values(c); logDist.update();
+
+      // Storage estimate
+      const usedKb = Math.min(data.length * 0.08, 1010);
+      const pct = (usedKb / 1024 * 100).toFixed(1);
+      document.getElementById('fsUsed').textContent = usedKb.toFixed(1) + ' KB';
+      document.getElementById('fsAvail').textContent = (1024 - usedKb).toFixed(1) + ' KB';
+      document.getElementById('storageBar').style.width = pct + '%';
+      document.getElementById('storagePct').textContent = pct + '%';
+
+      // File browser: group by file_name and node_id
+      const files = {};
+      data.forEach(l => {
+        const key = (l.file_name || '/sensor.log') + '|' + (l.node_id || '?');
+        if (!files[key]) files[key] = { fn: l.file_name || '/sensor.log', node: l.node_id || '?', count: 0, last: l.created_at, levels: [] };
+        files[key].count++;
+        files[key].last = l.created_at;
+        if (!files[key].levels.includes(l.log_level)) files[key].levels.push(l.log_level);
+      });
+      document.getElementById('fileTree').innerHTML = Object.entries(files).map(([key, info]) => `
+    <div class="fs-item" onclick="viewFile('${info.fn}','${info.node}',this)">
+      <span>📄</span>
+      <span class="fs-name">${info.fn}</span>
+      <span class="badge ${info.node === 'NODE_1' ? 'n1' : 'n2'}" style="font-size:.6em">${info.node}</span>
+      <span class="fs-meta">${info.count} entries</span>
+      <span class="fs-meta">${new Date(info.last).toTimeString().slice(0, 8)}</span>
+      <span class="badge ${info.levels.includes('ERROR') ? 'err' : info.levels.includes('WARN') ? 'warn' : 'ok'}" style="margin-left:4px">${info.levels.includes('ERROR') ? 'ERR' : info.levels.includes('WARN') ? 'WARN' : 'OK'}</span>
+    </div>`).join('');
+
+      // Add recent logs to kernel terminal
+      data.slice(0, 6).reverse().forEach(l => {
+        const t = { ERROR: 'error', WARN: 'warn', ALERT: 'alert', SYS: 'sys', INFO: 'info' }[l.log_level] || 'info';
+        addLog(`[${l.node_id || '?'}][${l.source || '?'}] ${l.message || ''}`, t);
+      });
+    }
+
+    async function viewFile(fn, nodeId, el) {
+      document.querySelectorAll('.fs-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+      const badge = document.getElementById('viewingFile');
+      badge.textContent = fn + ' (' + nodeId + ')'; badge.style.display = 'inline-flex';
+      const viewer = document.getElementById('fileViewer');
+      viewer.innerHTML = '<div style="color:rgba(139,195,74,.4);font-family:var(--mono)">Loading…</div>';
+
+      const q = sb.from('system_logs').select('*').eq('file_name', fn).order('created_at', { ascending: false }).limit(60);
+      if (nodeId && nodeId !== '?') q.eq('node_id', nodeId);
+      const { data, error } = await q;
+      if (error || !data) { viewer.innerHTML = '<div style="color:#ef9a9a">Error reading file.</div>'; return; }
+      const lc = { INFO: 'rgba(197,225,165,.7)', WARN: '#ffb74d', ERROR: '#ef9a9a', ALERT: '#f48fb1', SYS: '#a5d6a7' };
+      viewer.innerHTML = data.map(l => `
+    <div class="fv-line">
+      <span class="fv-ts">${new Date(l.created_at).toISOString().slice(11, 19)}</span>
+      <span class="fv-lvl" style="color:${lc[l.log_level] || 'rgba(197,225,165,.5)'}">[${l.log_level || '?'}]</span>
+      <span style="color:rgba(197,225,165,.4)">[${l.node_id || '?'}]</span>
+      <span style="color:rgba(197,225,165,.5)">[${l.source || '?'}]</span>
+      <span style="color:rgba(197,225,165,.8)">${l.message || ''}</span>
+    </div>`).join('') || '<div style="color:rgba(139,195,74,.3)">(empty)</div>';
+    }
+
+    async function fetchAll() {
+      if (!sb) return;
+      try { await fetchSensor(); } catch (e) { addLog('[sensor] ' + e.message, 'error'); }
+      try { await fetchScheduler(); } catch (e) { addLog('[scheduler] ' + e.message, 'error'); }
+      try { await fetchEvents(); } catch (e) { addLog('[events] ' + e.message, 'error'); }
+      try { await fetchLogs(); } catch (e) { addLog('[logs] ' + e.message, 'error'); }
+    }
+
+    function startPolling() { fetchAll(); setInterval(fetchAll, 3000); fetchExportCounts(); }
+
+    /* ── EXPORT ── */
+    async function fetchExportCounts() {
+      if (!sb) return;
+      const tables = ['sensor_readings', 'earthquake_events', 'system_logs', 'os_scheduler_log'];
+      const ids = ['expSensorCount', 'expEvCount', 'expLogCount', 'expSchedCount'];
+      for (let i = 0; i < tables.length; i++) {
+        try { const { count } = await sb.from(tables[i]).select('*', { count: 'exact', head: true }); document.getElementById(ids[i]).textContent = (count || 0).toLocaleString(); }
+        catch (e) { document.getElementById(ids[i]).textContent = '?'; }
+      }
+    }
+
+    function toCSV(data) {
+      if (!data || !data.length) return '';
+      const keys = Object.keys(data[0]);
+      const rows = data.map(r => keys.map(k => { let v = r[k]; if (v === null || v === undefined) return ''; v = String(v); if (v.includes(',') || v.includes('"') || v.includes('\n')) v = '"' + v.replace(/"/g, '""') + '"'; return v; }).join(','));
+      return [keys.join(','), ...rows].join('\n');
+    }
+
+    function downloadFile(content, filename, mime) {
+      const blob = new Blob([content], { type: mime });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function timeStamp() { return new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-'); }
+
+    function showPreview(data) {
+      if (!data || !data.length) { document.getElementById('expPreviewBody').innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px">No data</td></tr>'; return; }
+      const keys = Object.keys(data[0]);
+      document.getElementById('expPreviewHead').innerHTML = '<tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr>';
+      document.getElementById('expPreviewBody').innerHTML = data.slice(0, 20).map(r => '<tr>' + keys.map(k => { let v = r[k]; if (v === null || v === undefined) v = '–'; if (k === 'created_at' && v !== '–') v = new Date(v).toLocaleString(); return `<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${String(v)}">${v}</td>`; }).join('') + '</tr>').join('');
+      const badge = document.getElementById('expPreviewBadge');
+      badge.textContent = data.length + ' rows'; badge.style.display = 'inline-flex';
+    }
+
+    async function exportData(table, fmt) {
+      if (!sb) { addLog('Not connected', 'error'); return; }
+      document.getElementById('expStatus').textContent = '⏳ Fetching ' + table + '…';
+      try {
+        const { data, error } = await sb.from(table).select('*').order('created_at', { ascending: false }).limit(10000);
+        if (error) throw error;
+        showPreview(data);
+        const ts = timeStamp();
+        if (fmt === 'csv') downloadFile(toCSV(data), `${table}_${ts}.csv`, 'text/csv;charset=utf-8;');
+        else downloadFile(JSON.stringify(data, null, 2), `${table}_${ts}.json`, 'application/json');
+        document.getElementById('expStatus').textContent = `✅ Exported ${data.length} rows from ${table} as ${fmt.toUpperCase()}`;
+        fetchExportCounts();
+      } catch (e) { document.getElementById('expStatus').textContent = '❌ ' + e.message; }
+    }
+
+    async function customExport(fmt) {
+      if (!sb) { addLog('Not connected', 'error'); return; }
+      const table = document.getElementById('expTable').value;
+      const limit = parseInt(document.getElementById('expLimit').value) || 1000;
+      document.getElementById('expStatus').textContent = `⏳ Fetching ${table} (up to ${limit} rows)…`;
+      try {
+        const { data, error } = await sb.from(table).select('*').order('created_at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        showPreview(data);
+        const ts = timeStamp();
+        if (fmt === 'csv') downloadFile(toCSV(data), `${table}_custom_${ts}.csv`, 'text/csv;charset=utf-8;');
+        else downloadFile(JSON.stringify(data, null, 2), `${table}_custom_${ts}.json`, 'application/json');
+        document.getElementById('expStatus').textContent = `✅ Exported ${data.length} rows from ${table}`;
+      } catch (e) { document.getElementById('expStatus').textContent = '❌ ' + e.message; }
+    }
+
+    async function exportAll() {
+      if (!sb) { addLog('Not connected', 'error'); return; }
+      document.getElementById('expStatus').textContent = '⏳ Fetching all tables…';
+      try {
+        const tables = ['sensor_readings', 'earthquake_events', 'system_logs', 'os_scheduler_log'];
+        const all = {};
+        for (const t of tables) {
+          const { data, error } = await sb.from(t).select('*').order('created_at', { ascending: false }).limit(10000);
+          if (error) throw error;
+          all[t] = data;
+          document.getElementById('expStatus').textContent = `⏳ Fetched ${t} (${data.length} rows)…`;
+        }
+        const ts = timeStamp();
+        all._meta = { exported_at: new Date().toISOString(), project: 'EarthQuakeOS v2', architecture: 'direct-push' };
+        downloadFile(JSON.stringify(all, null, 2), `earthquakeos_full_export_${ts}.json`, 'application/json');
+        const total = Object.values(all).reduce((s, v) => s + (Array.isArray(v) ? v.length : 0), 0);
+        document.getElementById('expStatus').textContent = `✅ Full export done – ${total} total rows`;
+      } catch (e) { document.getElementById('expStatus').textContent = '❌ ' + e.message; }
+    }
+
+    /* ── INIT ── */
+    window.addEventListener('DOMContentLoaded', () => {
+      setupCharts();
+      addLog('EarthQuakeOS v2.0.0 – Kernel init (direct-push arch)', 'sys');
+      addLog('Nodes: NODE_1 + NODE_2 push independently via WiFi', 'sys');
+      addLog('Schema: node_id-based rows (no gateway merge)', 'info');
+      if (SUPABASE_URL && SUPABASE_KEY) initSB();
+      else openModal();
+    });
+  </script>
+</body>
+
+</html>
